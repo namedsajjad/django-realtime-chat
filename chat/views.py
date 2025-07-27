@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import *
 from .forms import *
+
+
 # Create your views here.
 @login_required
 def chat(req):
@@ -9,14 +11,18 @@ def chat(req):
     chat_messages = chat_group.chat_messages.all()[:30]
     form = ChatmessageCreateForm()
 
-    if req.method == "POST":
+    if req.htmx:
         form = ChatmessageCreateForm(req.POST)
         if form.is_valid:
             message = form.save(commit=False)
             message.author = req.user
             message.group = chat_group
             message.save()
-            return redirect('home')
+            ctx = {
+                'message' : message,
+                'user' : req.user
+            }
+            return render(req, 'partials/chat_message_partial.html', ctx)
 
     return render(req, "chat/chat.html", {
         "chat_messages" : chat_messages,
